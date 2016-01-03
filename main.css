@@ -1,0 +1,52 @@
+* {
+  box-sizing: border-box;
+}
+
+body, html {
+  box-sizing: border-box;
+  font-family: 'Helvetica';
+}
+
+.row {
+  overflow: auto;
+}
+
+.row:after {
+  clear: both;
+}
+
+*[class^="col-"] {
+  float: left;
+  display: block;
+  position: relative;
+  padding: 0 20px 20px 20px;
+}
+
+.col-100 {
+  width: 100%;
+}
+
+.col-50 {
+  width: 50%;
+}
+
+code {
+  overflow-y: scroll;
+  display: block;
+  width: 100%;
+  max-height: 500px;
+}
+
+button {
+  padding: 10px 15px;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  background-color: #62A762;
+  border: none;
+}
+
+button:hover {
+  background-color: #4E804E;
+}

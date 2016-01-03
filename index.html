@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RxJS Experiments</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/styles/tomorrow-night.min.css">
+  <link rel="stylesheet" href="main.css">
+</head>
+<body>
+
+  <div class="row">
+    <div class="col-100">
+      <h1>Experiments in RxJS</h1>
+    </div>
+  </div>
+
+  <ul>
+    <li><a href="#task-1">Creating an observable stream from a HTTP request (the long way)</a></li>
+    <li><a href="#task-2">Merge multiple observable streams using <code style="display:inline">flatMap</code></a></li>
+    <li><a href="#task-3">And the short version</a></li>
+    <li><a href="#task-4">Triple click event stream using <code style="display:inline">buffer</code>, <code style="display:inline">map</code> and <code style="display:inline">filter</code></a></li>
+    <li><a href="#task-5">Demonstration of subscribing and unsubscribing with and without <code style="display:inline">share</code></a></li>
+  </ul>
+  
+  <!-- Task 1 -->
+  <div class="task" id="task-1">
+    <div class="row">
+      <div class="col-100">
+        <h2>Creating an observable stream from a HTTP request (the long way)</h2>
+        <hr>      
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-100">
+        <button type="button" id="task1">Run Task 1</button>        
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-50">
+        <h3>Request</h3>
+        <pre>
+          <code>
+  function task1() {
+    // This stream simply emits the string
+    var requestStream = Rx.Observable.just(githubUserUrl);
+
+    // Subscribing causes the stream to omit it's value
+    requestStream.subscribe(function(url){
+      // Create a new stream from the emitted url string which use the string
+      // to make a HTTP request
+      var responseStream = Rx.Observable.create(function(observer){
+        // Manually assign the promise's arguments in the callbacks to the the observer's
+        // `onNext`, `onError` and `onComplete` functions
+        window.fetch(url).then(function(res){
+          // fetch doesn't return the reponse directly, .json() needs to be called which returns a promise
+          res.json().then(function(data){
+            observer.onNext(data);
+          })
+        }, function(jqXHR, status, error){
+          observer.onError(error);
+        }, function(){
+          observer.onCompleted();
+        });
+      });
+
+      // Finally, subscribe to the `responseStream` and when it's response os emitted inject it into the DOM
+      responseStream.subscribe(function(res){
+        document.getElementById('task1-output').innerHTML = JSON.stringify(res, null, 4);
+        console.log(res);
+      });
+    })
+  }
+          </code>
+        </pre>
+      </div>
+
+      <div class="col-50">
+        <h3>Response</h3>
+        <pre>
+          <code id="task1-output" class="json">// Click the button above to fetch the response</code>
+        </pre>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Task 2 -->
+  <div class="task" id="task-2">
+    <div class="row">
+      <div class="col-100">
+        <h2>Merge multiple observable streams using <code style="display:inline">flatMap</code></h2>
+        <hr>      
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-100">
+        <button type="button" id="task2">Run Task 2</button>        
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-50">
+        <h3>Request</h3>
+        <pre>
+          <code>
+  function task2() {
+    var requestStream = Rx.Observable.just(githubUserUrl);
+
+    requestStream.subscribe(function(url){
+      // Use `flatMap` to pipe the `requestStream` to a new stream....
+      var responseStream = requestStream.flatMap(function(url) {
+        // ...which then creates a new stream from the fetch promise...
+        return Rx.Observable.fromPromise(window.fetch(url)).flatMap(function(res){
+          // ...which then creates another stream from the json() promise
+          return Rx.Observable.fromPromise(res.json());
+        });
+      });
+
+      responseStream.subscribe(function(res){
+        document.getElementById('task2-output').innerHTML = JSON.stringify(res, null, 4);
+        console.log(res);
+      });
+    })
+  }
+          </code>
+        </pre>
+      </div>
+
+      <div class="col-50">
+        <h3>Response</h3>
+        <pre>
+          <code id="task2-output" class="json">// Click the button above to fetch the response</code>
+        </pre>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Task 3 -->
+  <div class="task" id="task-3">
+    <div class="row">
+      <div class="col-100">
+        <h2>And the short version</h2>
+        <hr>      
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-100">
+        <button type="button" id="task3">Run Task 3</button>        
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-50">
+        <h3>Request</h3>
+        <pre>
+          <code>
+  function task3() {
+    var requestStream = Rx.Observable.fromPromise(window.fetch(githubUserUrl))
+      .flatMap(function(res){
+        return Rx.Observable.fromPromise(res.json());
+      });
+
+    requestStream.subscribe(function(res){
+      document.getElementById('task3-output').innerHTML = JSON.stringify(res, null, 4);
+      console.log(res)
+    })
+  }
+          </code>
+        </pre>
+      </div>
+
+      <div class="col-50">
+        <h3>Response</h3>
+        <pre>
+          <code id="task3-output" class="json">// Click the button above to fetch the response</code>
+        </pre>
+      </div>
+    </div>
+
+  </div>
+
+    <!-- Task 4 -->
+  <div class="task" id="task-4">
+    <div class="row">
+      <div class="col-100">
+        <h2>Triple click event stream using <code style="display:inline">buffer</code>, <code style="display:inline">map</code> and <code style="display:inline">filter</code></h2>
+        <hr>      
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-100">
+        <button type="button" id="task4">Triple Click Me!</button>        
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-50">
+        <h3>Request</h3>
+        <pre>
+          <code>
+  (function(){
+
+    var clickStream = Rx.Observable.fromEvent(document.querySelector('#task4'), 'click');
+
+    var trippleClickStream = clickStream
+      .buffer(function() { return clickStream.debounce(250); })
+      .map(function(list) { return list.length; })
+      .filter(function(x) { return x === 3; });
+
+    trippleClickStream.subscribe(function (numclicks) {
+      document.getElementById('task4-output').insertAdjacentHTML('beforeend', 'That was a triple click!');
+    });
+
+  })();
+          </code>
+        </pre>
+      </div>
+
+      <div class="col-50">
+        <h3>Response</h3>
+        <pre>
+          <code id="task4-output" class="json">// Triple-click the button above to fetch the response</code>
+        </pre>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Task 5 -->
+  <div class="task" id="task-5">
+    <div class="row">
+      <div class="col-100">
+        <h2>Demonstration of subscribing and unsubscribing with and without <code style="display:inline">share</code></h2>
+        <hr>      
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-100">
+        <button type="button" id="task5">Run Task 5</button>
+        <button type="button" id="task5-subscribe">Resubscribe</button>        
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-50">
+        <h3>Request</h3>
+        <pre>
+          <code></code>
+        </pre>
+      </div>
+
+      <div class="col-50">
+        <h3>Response</h3>
+        <pre>
+          <code id="task5-output" class="json">// Click the button above to fetch the response</code>
+        </pre>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/rxjs/4.0.7/rx.all.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/highlight.min.js"></script>
+
+  <script src="js/main.js"></script>
+  <script src="js/task1.js"></script>
+  <script src="js/task2.js"></script>
+  <script src="js/task3.js"></script>
+  <script src="js/triple-click-event-stream.js"></script>
+  <script src="js/share.js"></script>
+</body>
+</html>
